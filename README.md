@@ -46,14 +46,16 @@ Claude Desktop 설정 파일을 편집합니다:
   "mcpServers": {
     "notion": {
       "command": "node",
-      "args": ["/absolute/path/to/notion-mcp-server/server.js"],
+      "args": ["/absolute/path/to/your/notion-mcp-server/server.js"],
       "env": {
-        "NOTION_TOKEN": "secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        "NOTION_TOKEN": "YOUR_NOTION_TOKEN_HERE"
       }
     }
   }
 }
 ```
+
+또는 `config/claude_desktop_config.example.json` 파일을 참고하여 설정하세요.
 
 ### 4. Claude Desktop 재시작
 
@@ -187,19 +189,27 @@ echo $NOTION_TOKEN
 ## 🔒 보안 고려사항
 
 ### 토큰 관리
-- 환경 변수로 민감 정보 보호
-- `.env` 파일 사용 시 `.gitignore`에 추가
-- 토큰 주기적 갱신
+- **절대 Git에 토큰 커밋 금지**: `.env` 파일은 `.gitignore`에 포함
+- **환경 변수 사용**: Claude Desktop 설정에서 토큰을 환경 변수로 설정
+- **토큰 주기적 갱신**: 보안을 위해 정기적으로 토큰 재생성
+- **`.env.example` 활용**: 실제 토큰 없이 설정 템플릿 제공
 
 ### 권한 제어
-- Notion Integration 최소 권한 원칙
-- 필요한 페이지에만 권한 부여
-- 정기적인 권한 검토
+- **최소 권한 원칙**: Notion Integration에 필요한 최소한의 권한만 부여
+- **페이지별 권한**: 필요한 페이지에만 Integration 연결
+- **정기적 권한 검토**: 사용하지 않는 Integration 정리
+
+### 개발 환경 보안
+```bash
+# 로컬 개발 시 .env 파일 사용
+cp .env.example .env
+# .env 파일에 실제 토큰 입력 (Git에 추가되지 않음)
+```
 
 ### 에러 처리
-- 민감 정보 노출 방지
-- 적절한 로깅 수준 설정
-- 사용자 친화적 오류 메시지
+- **민감 정보 로깅 방지**: 토큰이나 개인정보가 로그에 노출되지 않도록 처리
+- **적절한 로깅 수준**: 디버깅 정보와 보안 정보 구분
+- **사용자 친화적 오류 메시지**: 내부 구현 세부사항 노출 방지
 
 ## 🔧 개발
 

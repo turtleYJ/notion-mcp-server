@@ -2,9 +2,9 @@
   "mcpServers": {
     "notion": {
       "command": "node",
-      "args": ["/Users/dev1/Desktop/Repository/notion-mcp-server/server.js"],
+      "args": ["/absolute/path/to/your/notion-mcp-server/server.js"],
       "env": {
-        "NOTION_TOKEN": "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"
+        "NOTION_TOKEN": "YOUR_NOTION_TOKEN_HERE"
       }
     }
   }
