@@ -4,8 +4,8 @@ Claude Desktop과 Notion을 연결하는 MCP (Model Context Protocol) 서버입�
 
 ## 🎯 기능
 
-- **read_page**: Notion 페이지 내용 읽기
-- **create_page**: 새 Notion 페이지 생성
+- **read_page**: Notion 페이지 내용 읽기 (확장된 마크다운 포맷 지원)
+- **create_page**: 새 Notion 페이지 생성 (대용량 문서 & 마크다운 서식 지원)
 
 ## 📋 요구사항
 
@@ -169,6 +169,38 @@ tail -f ~/Library/Logs/Claude/mcp-server-notion.log
 2. Integration 권한이 페이지에 연결되었는지 확인
 3. 페이지 ID 형식 확인 (32자리 영숫자)
 
+### 문제 4: 텍스트 길이 제한 (2000자)
+
+**증상:**
+```
+Error: body failed validation: body.children[0].paragraph.rich_text[0].text.content.length should be ≤ `2000`, instead was `3094`
+```
+
+**해결책:** ✅ **자동 해결됨**
+- 긴 텍스트를 1900자 단위로 자동 분할
+- 안전한 분할점 자동 탐지 (줄바꿈, 문장 끝, 단어 경계)
+
+### 문제 5: 블록 수 제한 (100개)
+
+**증상:**
+```
+Error: body failed validation: body.children.length should be ≤ `100`, instead was `109`
+```
+
+**해결책:** ✅ **자동 해결됨**
+- 대용량 문서를 95개 블록씩 배치 처리
+- 첫 배치로 페이지 생성 후 나머지 블록 추가
+- 총 블록 수 피드백 제공
+
+### 문제 6: 마크다운 서식 미적용
+
+**증상:** `**볼드**` 텍스트가 그대로 표시됨
+
+**해결책:** ✅ **자동 해결됨**
+- 볼드 마크다운(`**text**`)을 Notion 서식으로 자동 변환
+- Rich Text annotations 적용
+- 모든 블록 타입에서 서식 지원
+
 ### 디버깅 팁
 
 **로그 모니터링:**
@@ -185,6 +217,10 @@ NOTION_TOKEN=your_token node server.js
 # 환경 변수 확인
 echo $NOTION_TOKEN
 ```
+
+**성능 최적화:**
+- 대용량 문서는 배치 처리로 인해 추가 시간 소요 (배치당 1-2초)
+- 매우 큰 문서는 여러 페이지로 분할 권장
 
 ## 🔒 보안 고려사항
 
@@ -235,14 +271,23 @@ notion-mcp-server/
    import { Client } from "@notionhq/client";
    ```
 
-2. **Notion Client 설정**
+2. **핵심 유틸리티 함수들**
+   ```javascript
+   function splitTextIntoBlocks(content, maxLength = 1900)  // 텍스트 분할
+   function parseRichText(text)                             // 마크다운 → Rich Text 변환
+   function parseMarkdownToBlocks(content)                  // 마크다운 → Notion 블록 변환
+   function richTextToMarkdown(richTextArray)              // Rich Text → 마크다운 변환
+   function blockToText(block)                              // Notion 블록 → 텍스트 변환
+   ```
+
+3. **Notion Client 설정**
    ```javascript
    const notion = new Client({
      auth: process.env.NOTION_TOKEN,
    });
    ```
 
-3. **MCP Server 초기화**
+4. **MCP Server 초기화**
    ```javascript
    const server = new Server({
      name: "notion-mcp-server",
@@ -252,21 +297,22 @@ notion-mcp-server/
    });
    ```
 
-4. **도구 목록 핸들러**
+5. **도구 목록 핸들러**
    ```javascript
    server.setRequestHandler(ListToolsRequestSchema, async () => {
      return { tools: [/* 도구 정의 */] };
    });
    ```
 
-5. **도구 호출 핸들러**
+6. **도구 호출 핸들러 (배치 처리 지원)**
    ```javascript
    server.setRequestHandler(CallToolRequestSchema, async (request) => {
-     // 도구 실행 로직
+     // read_page: 확장된 블록 타입 지원
+     // create_page: 대용량 문서 배치 처리
    });
    ```
 
-6. **STDIO 통신 설정**
+7. **STDIO 통신 설정**
    ```javascript
    async function run() {
      const transport = new StdioServerTransport();
@@ -278,12 +324,23 @@ notion-mcp-server/
 
 현재 다음 블록 타입을 지원합니다:
 
-- `paragraph`: 일반 텍스트
-- `heading_1`: 제목 1 (# 형태로 변환)
-- `heading_2`: 제목 2 (## 형태로 변환)
-- `heading_3`: 제목 3 (### 형태로 변환)
-- `bulleted_list_item`: 불릿 리스트 (• 형태로 변환)
-- `numbered_list_item`: 번호 리스트 (1. 형태로 변환)
+#### 읽기 지원 (read_page)
+- `paragraph`: 일반 텍스트 (볼드, 이탤릭, 코드, 취소선, 밑줄, 링크 서식 포함)
+- `heading_1/2/3`: 제목 (# ## ### 형태로 변환)
+- `bulleted_list_item`: 불릿 리스트 (• 형태, 중첩 지원)
+- `numbered_list_item`: 번호 리스트 (1. 형태, 중첩 지원)
+- `code`: 코드 블록 (언어별 구문 강조)
+- `quote`: 인용구 (> 형태)
+- `divider`: 구분선 (---)
+- `callout`: 콜아웃 (이모지 + 강조 텍스트)
+- `toggle`: 접기/펼치기 섹션
+- `to_do`: 체크박스 항목
+
+#### 생성 지원 (create_page)
+- **마크다운 파싱**: `# ## ###` (제목), `- *` (불릿 리스트), `---` (구분선)
+- **텍스트 서식**: `**볼드**` 자동 변환
+- **대용량 문서**: 100개 이상 블록 자동 배치 처리
+- **긴 텍스트**: 2000자 이상 자동 분할 처리
 
 ## 🚀 확장 가능성
 
