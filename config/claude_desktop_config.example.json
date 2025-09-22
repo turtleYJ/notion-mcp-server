@@ -2,10 +2,14 @@
   "mcpServers": {
     "notion": {
       "command": "node",
-      "args": ["/absolute/path/to/your/notion-mcp-server/server.js"],
+      "args": ["/absolute/path/to/mcp-servers/notion-mcp/server.js"],
       "env": {
         "NOTION_TOKEN": "YOUR_NOTION_TOKEN_HERE"
       }
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-servers/playwright-mcp/server.js"]
     }
   }
 }
