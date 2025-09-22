@@ -1,31 +1,34 @@
 {
-  "name": "notion-mcp-server",
+  "name": "mcp-servers",
   "version": "1.0.0",
-  "description": "MCP server for Notion integration with Claude",
-  "main": "server.js",
+  "description": "Collection of MCP servers for Claude integration",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start:notion": "cd notion-mcp && npm start",
+    "start:playwright": "cd playwright-mcp && npm start",
+    "install:all": "npm install && cd notion-mcp && npm install && cd ../playwright-mcp && npm install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/turtleYJ/notion-mcp-server.git"
+    "url": "git+https://github.com/turtleYJ/mcp-servers.git"
   },
   "keywords": [
     "mcp",
-    "notion",
     "claude",
-    "ai"
+    "ai",
+    "automation",
+    "notion",
+    "playwright"
   ],
   "author": "turtleYJ",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/turtleYJ/notion-mcp-server/issues"
+    "url": "https://github.com/turtleYJ/mcp-servers/issues"
   },
-  "homepage": "https://github.com/turtleYJ/notion-mcp-server#readme",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.4.0",
-    "@notionhq/client": "^4.0.0"
-  }
+  "homepage": "https://github.com/turtleYJ/mcp-servers#readme",
+  "workspaces": [
+    "notion-mcp",
+    "playwright-mcp"
+  ]
 }
